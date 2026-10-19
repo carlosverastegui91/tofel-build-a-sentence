@@ -1,13 +1,14 @@
 import random
 import streamlit as st
+from streamlit_sortables import sort_items
 
 st.set_page_config(
-    page_title="TOEFL iBT - Build a Sentence (100 Practice Set)", page_icon="✏️"
+    page_title="TOEFL iBT - Drag & Drop Build a Sentence", page_icon="✏️"
 )
 
-st.title("✏️ TOEFL iBT: Build a Sentence Practice")
+st.title("✏️ TOEFL iBT: Drag & Drop Sentence Builder")
 st.write(
-    "Reorder the word chunks to build a grammatically correct sentence completing Speaker B's response."
+    "Drag and reorder the word chunks into the correct sequence to complete Speaker B's response."
 )
 
 # 100 Authentic TOEFL iBT Practice Questions across B1, B2, and C1 levels
@@ -1101,7 +1102,7 @@ questions = [
     },
 ]
 
-# Sidebar Navigation & Filtering
+# Sidebar Filtering
 st.sidebar.title("🎯 Options")
 level_filter = st.sidebar.selectbox(
     "Filter by CEFR Level:", ["All Levels (100)", "B1", "B2", "C1"]
@@ -1112,29 +1113,35 @@ if level_filter != "All Levels (100)":
 else:
     active_pool = questions
 
-# Initialize Session State
+# Session State Initialization
 if "current_q" not in st.session_state:
     st.session_state.current_q = random.choice(active_pool)
 
 q = st.session_state.current_q
 
+if "shuffled_chunks" not in st.session_state:
+    shuffled = q["chunks"].copy()
+    random.shuffle(shuffled)
+    st.session_state.shuffled_chunks = shuffled
+
 st.caption(f"Target Level: **{q['level']}**")
 st.subheader(f"Speaker A: '{q['speaker_a']}'")
 
-# Shuffle chunks for display
-if "shuffled_chunks" not in st.session_state:
-    all_chunks = q["chunks"].copy()
-    random.shuffle(all_chunks)
-    st.session_state.shuffled_chunks = all_chunks
+st.write("👇 **Drag and reorder the items below:**")
 
-st.write("**Available Word Chunks:**")
-st.info(" | ".join([f"`[{c}]`" for c in st.session_state.shuffled_chunks]))
+# Interactive Drag and Drop Container
+sorted_chunks = sort_items(
+    st.session_state.shuffled_chunks, direction="vertical"
+)
 
-user_order = st.text_input("Type the complete sentence:")
+st.write("---")
+# Live sentence preview based on drag arrangement
+assembled_sentence = " ".join(sorted_chunks)
+st.write(f"**Your Built Sentence:** *{assembled_sentence}*")
 
 if st.button("Check Answer"):
     correct_sentence = " ".join(q["chunks"])
-    if user_order.strip().lower() == correct_sentence.lower():
+    if assembled_sentence.strip().lower() == correct_sentence.lower():
         st.success("🎉 Correct!")
     else:
         st.error(f"**Correct Sentence:** {correct_sentence}")
@@ -1142,7 +1149,7 @@ if st.button("Check Answer"):
 
 if st.button("Next Question ➡️"):
     st.session_state.current_q = random.choice(active_pool)
-    all_chunks = st.session_state.current_q["chunks"].copy()
-    random.shuffle(all_chunks)
-    st.session_state.shuffled_chunks = all_chunks
+    shuffled = st.session_state.current_q["chunks"].copy()
+    random.shuffle(shuffled)
+    st.session_state.shuffled_chunks = shuffled
     st.rerun()
